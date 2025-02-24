@@ -27,11 +27,17 @@
 #ifndef HW_H
 #define HW_H
 
-#define GPIO_LED_PIN    PICO_DEFAULT_LED_PIN
+#define GPIO_LED_PIN    16 //PICO_DEFAULT_LED_PIN
 
 #define GPIO_VID_DATA   GPIO_VID_BASE
 #define GPIO_VID_VS     (GPIO_VID_DATA + 1)
 #define GPIO_VID_CLK    (GPIO_VID_VS + 1)
 #define GPIO_VID_HS     (GPIO_VID_CLK + 1)
+
+/* OLED pins */
+#define GPIO_OLED_SDA	2
+#define GPIO_OLED_SCL	3
+#define GPIO_OLED_GND	4
+#define GPIO_OLED_VCC	5
 
 #endif
