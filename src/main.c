@@ -27,10 +27,14 @@
  */
 
 #include <stdio.h>
+/* OLED display include stdint */
+#include <stdint.h>
 #include <unistd.h>
 #include <string.h>
 #include "hardware/clocks.h"
 #include "hardware/gpio.h"
+/* OLED display include i2c */
+#include "hardware/i2c.h"
 #include "hardware/pio.h"
 #include "hardware/sync.h"
 #include "pico/multicore.h"
@@ -44,6 +48,9 @@
 #include "tusb.h"
 
 #include "umac.h"
+
+/* OLED display include ssd1306 lib */
+#include "ssd1306.h"
 
 #if USE_SD
 #include "f_util.h"
@@ -76,6 +83,19 @@ static void     io_init()
 {
         gpio_init(GPIO_LED_PIN);
         gpio_set_dir(GPIO_LED_PIN, GPIO_OUT);
+        /* OLED display comm bus init */
+        i2c_init(i2c1, 400000);
+        gpio_set_function(GPIO_OLED_SDA, GPIO_FUNC_I2C);
+        gpio_set_function(GPIO_OLED_SCL, GPIO_FUNC_I2C);
+        gpio_pull_up(GPIO_OLED_SDA);
+        gpio_pull_up(GPIO_OLED_SCL);
+        /* OLED display power from GPIO */
+        gpio_init(GPIO_OLED_GND);
+        gpio_set_dir(GPIO_OLED_GND, GPIO_OUT);
+        gpio_put(GPIO_OLED_GND, 0);
+        gpio_init(GPIO_OLED_VCC);
+        gpio_set_dir(GPIO_OLED_VCC, GPIO_OUT);
+        gpio_put(GPIO_OLED_VCC, 1);
 }
 
 static void     poll_led_etc()
@@ -270,6 +290,9 @@ int     main()
 	stdio_init_all();
         io_init();
 
+        /* OLED display init */
+        oledInit();
+
         multicore_launch_core1(core1_main);
 
 	printf("Starting, init usb\n");
@@ -280,8 +303,61 @@ int     main()
                 tuh_task();
                 hid_app_task();
                 poll_led_etc();
+                /* OLED display update framebuffer */
+                oledWriteFB(umac_ram + umac_get_fb_offset());
 	}
 
 	return 0;
 }
 
+/* OLED display */
+static ssd1306_t disp;
+
+void oledInit(void)
+{
+	disp.external_vcc=false;
+	ssd1306_init(&disp, 128, 64, 0x3C, i2c1);
+	ssd1306_clear(&disp);	
+}
+
+void oledWriteFB(uint8_t *fb_in)
+{
+	ssd1306_clear(&disp);
+
+	uint16_t system_mouse_x, system_mouse_y, system_cursor_x, system_cursor_y;
+
+	/* read Macintosh System RAM for high and low bytes and combine into 16 bit big endian coordinate */ 
+	system_mouse_x = ((uint16_t)umac_ram[0x82F] << 8) | umac_ram[0x82E];
+	system_mouse_y = ((uint16_t)umac_ram[0x82D] << 8) | umac_ram[0x82C];
+
+	/* convert 16 bit big endian coordinate to little endian */
+	/* add an offset so pointer will remain in the centre of the OLED unless near to the edges of a 128x64 frame */
+	system_cursor_x = ((system_mouse_x >> 8) | (system_mouse_x << 8)) - 64;
+	system_cursor_y = ((system_mouse_y >> 8) | (system_mouse_y << 8)) - 32;
+
+	int frame_pos_x, frame_pos_y;
+
+	for (int h = 0; h < 63; h++)
+	{
+		for (int w = 0; w < 127; w++)
+		{
+			if (( system_cursor_x >= 0 ) && ( system_cursor_x <= (512 - 128)))
+			{
+				/* nice 1 pixel screen scrolling */
+				frame_pos_x = system_cursor_x / 1;
+			}
+			if (( system_cursor_y >= 0 ) && ( system_cursor_y <= (342 - 64)))
+			{
+				/* nice 1 pixel screen scrolling */
+				frame_pos_y = system_cursor_y / 1;
+			}
+				/* nice 1 pixel screen scrolling */
+			int bit = ((h + (1 * frame_pos_y)) * 512) + (w + (1 * frame_pos_x));
+			if (((fb_in[bit / 8] >> (7 - bit % 8)) & 1) == 0)
+			{
+				ssd1306_draw_pixel(&disp, w, h);
+			}
+		}
+	}
+	ssd1306_show(&disp);
+}
