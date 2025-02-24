@@ -30,11 +30,18 @@ cmake_minimum_required(VERSION 3.13)
 #
 
 option(USE_SD "Build in SD support" OFF)
-set(SD_TX 3 CACHE STRING "SD SPI TX pin")
-set(SD_RX 4 CACHE STRING "SD SPI RX pin")
-set(SD_SCK 2 CACHE STRING "SD SPI SCK pin")
-set(SD_CS 5 CACHE STRING "SD SPI CS pin")
+#set(SD_TX 3 CACHE STRING "SD SPI TX pin")
+#set(SD_RX 4 CACHE STRING "SD SPI RX pin")
+#set(SD_SCK 2 CACHE STRING "SD SPI SCK pin")
+#set(SD_CS 5 CACHE STRING "SD SPI CS pin")
+#set(SD_MHZ 5 CACHE STRING "SD SPI speed in MHz")
+
+set(SD_TX 11 CACHE STRING "SD SPI TX pin")
+set(SD_RX 12 CACHE STRING "SD SPI RX pin")
+set(SD_SCK 10 CACHE STRING "SD SPI SCK pin")
+set(SD_CS 9 CACHE STRING "SD SPI CS pin")
 set(SD_MHZ 5 CACHE STRING "SD SPI speed in MHz")
+
 option(USE_VGA_RES "Video uses VGA (640x480) resolution" OFF)
 set(VIDEO_PIN 18 CACHE STRING "Video GPIO base pin (followed by VS, CLK, HS)")
 
@@ -102,6 +109,8 @@ if (TARGET tinyusb_device)
     src/video.c
     src/kbd.c
     src/hid.c
+    # OLED add ssd1306 driver
+    src/ssd1306.c
     ${EXTRA_SD_SRC}
 
     ${UMAC_SOURCES}
@@ -125,6 +134,8 @@ if (TARGET tinyusb_device)
     hardware_dma
     hardware_pio
     hardware_sync
+    # OLED add i2c lib
+    hardware_i2c
     ${EXTRA_SD_LIB}
     )
 
