@@ -40,7 +40,7 @@ socket, which SPI it is driven by, and how it is wired.
 // selects.
 static spi_t spis[] = {  // One for each SPI.
     {
-        .hw_inst = spi0,  // SPI component
+        .hw_inst = spi1,  //spi0, // SPI component
         .miso_gpio = SD_RX, // GPIO number (not pin number)
         .mosi_gpio = SD_TX,
         .sck_gpio = SD_SCK,
