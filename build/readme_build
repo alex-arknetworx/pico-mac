@@ -1,5 +1,6 @@
 Cloning the repo will provide a build folder.
-
-cd pico-mac/build/
+cd pico-mac
+git submodule update --init --recursive
+cd build
 cmake .. -DPICO_SDK_PATH=/home/you_username/pico-sdk/ -DUSE_SD=true
 make
